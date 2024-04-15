@@ -4773,11 +4773,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\my_source_code\\C sharp\\SarahaSolution\\Saraha.Api\\Saraha.Api.csproj",
+      "projectUniqueName": "D:\\my_source_code\\Projects\\SarahaSolution\\Saraha.Api\\Saraha.Api.csproj",
       "projectName": "Saraha.Api",
-      "projectPath": "D:\\my_source_code\\C sharp\\SarahaSolution\\Saraha.Api\\Saraha.Api.csproj",
+      "projectPath": "D:\\my_source_code\\Projects\\SarahaSolution\\Saraha.Api\\Saraha.Api.csproj",
       "packagesPath": "C:\\Users\\Yousef\\.nuget\\packages\\",
-      "outputPath": "D:\\my_source_code\\C sharp\\SarahaSolution\\Saraha.Api\\obj\\",
+      "outputPath": "D:\\my_source_code\\Projects\\SarahaSolution\\Saraha.Api\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\Yousef\\AppData\\Roaming\\NuGet\\NuGet.Config",

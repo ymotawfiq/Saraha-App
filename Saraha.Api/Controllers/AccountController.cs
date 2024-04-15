@@ -502,14 +502,5 @@ namespace Saraha.Api.Controllers
         }
 
 
-        [HttpGet("FacebookSignIn")]
-        public async Task FacebookSignIn()
-        {
-            await HttpContext.ChallengeAsync(FacebookDefaults.AuthenticationScheme,
-              new AuthenticationProperties { RedirectUri = "http://localhost:5007/profile" });
-
-        }
-
-
     }
 }

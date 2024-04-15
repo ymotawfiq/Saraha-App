@@ -64,10 +64,6 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = builder.Configuration["JWT:ValidIssuer"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:Secret"]))
     };
-}).AddCookie()
-.AddFacebook(op => {
-    op.AppId = builder.Configuration["Authentication:Facebook:AppId"];
-    op.AppSecret = builder.Configuration["Authentication:Facebook:AppSecret"];
 });
 
 //Add Email Configs
