@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Saraha.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+42847ccaca53bbd090eb78859067084ce0539955")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7548c072a6e94a727b92680b20108528955c1d7c")]
 [assembly: System.Reflection.AssemblyProductAttribute("Saraha.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Saraha.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

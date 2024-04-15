@@ -59,15 +59,17 @@ namespace Saraha.Api.Controllers
         {
             try
             {
-
-                var user = await _userManager.GetUserAsync(HttpContext.User);
-                if (user != null)
+                if (HttpContext.User.Identity != null && HttpContext.User.Identity.Name != null)
                 {
-                    var admins = await _userManager.GetUsersInRoleAsync("Admin");
-                    if (user.Id == userId || admins.Contains(user))
+                    var user = await _userManager.FindByEmailAsync(HttpContext.User.Identity.Name);
+                    if (user != null)
                     {
-                        var response = await _userMessagesService.GetAllUserMessagesByUserId(userId);
-                        return Ok(response);
+                        var admins = await _userManager.GetUsersInRoleAsync("Admin");
+                        if (user.Id == userId || admins.Contains(user))
+                        {
+                            var response = await _userMessagesService.GetAllUserMessagesByUserId(userId);
+                            return Ok(response);
+                        }
                     }
                 }
                 return Unauthorized();
@@ -90,17 +92,20 @@ namespace Saraha.Api.Controllers
         {
             try
             {
-                
-                var user = await _userManager.GetUserAsync(HttpContext.User);
-                if (user != null)
+                if (HttpContext.User.Identity != null && HttpContext.User.Identity.Name!=null)
                 {
-                    var admins = await _userManager.GetUsersInRoleAsync("Admin");
-                    if (user.Email == userEmail || admins.Contains(user))
+                    var user = await _userManager.FindByEmailAsync(HttpContext.User.Identity.Name);
+                    if (user != null)
                     {
-                        var response = await _userMessagesService.GetAllUserMessagesByUserEmail(userEmail);
-                        return Ok(response);
+                        var admins = await _userManager.GetUsersInRoleAsync("Admin");
+                        if (user.Email == userEmail || admins.Contains(user))
+                        {
+                            var response = await _userMessagesService.GetAllUserMessagesByUserEmail(userEmail);
+                            return Ok(response);
+                        }
                     }
                 }
+
                 return Unauthorized();
             }
             catch (Exception ex)
