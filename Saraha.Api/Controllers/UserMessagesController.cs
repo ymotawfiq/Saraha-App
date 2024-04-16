@@ -11,7 +11,6 @@ using Saraha.Api.Services.UserMessagesService;
 
 namespace Saraha.Api.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
     public class UserMessagesController : ControllerBase
     {
@@ -34,7 +33,7 @@ namespace Saraha.Api.Controllers
         }
 
         [Authorize(Roles ="Admin")]
-        [HttpGet("allusersmessages")]
+        [HttpGet("usersMessages")]
         public async Task<IActionResult> GetAllUsersMessages()
         {
             try
@@ -54,7 +53,7 @@ namespace Saraha.Api.Controllers
         }
 
         [Authorize(Roles = "Admin,User")]
-        [HttpGet("allusersmessagesbyuserid/{userId}")]
+        [HttpGet("usersMessagesByuser/{userId}")]
         public async Task<IActionResult> GetAllUsersMessagesByUserId([FromRoute] string userId)
         {
             try
@@ -87,7 +86,7 @@ namespace Saraha.Api.Controllers
 
 
         [Authorize(Roles = "Admin,User")]
-        [HttpGet("allusersmessagesbyuseremail")]
+        [HttpGet("usersMessagesByuser")]
         public async Task<IActionResult> GetAllUsersMessagesByUserRmail(string userEmail)
         {
             try
@@ -120,7 +119,7 @@ namespace Saraha.Api.Controllers
         }
 
         [AllowAnonymous]
-        [HttpPost("sendmessage")]
+        [HttpPost("send-message")]
         public async Task<IActionResult> SendMessageToUser([FromBody] UserMessageDto userMessageDto)
         {
             try
@@ -140,7 +139,7 @@ namespace Saraha.Api.Controllers
         }
 
         [Authorize(Roles ="Admin,User")]
-        [HttpDelete("deletemessage/{messageId}")]
+        [HttpDelete("deleteMessage/{messageId}")]
         public async Task<IActionResult> DeleteMessage([FromRoute] Guid messageId)
         {
             try

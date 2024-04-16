@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Saraha.Api.Data;
 
@@ -11,9 +12,11 @@ using Saraha.Api.Data;
 namespace Saraha.Api.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240416010534_ChangeOnDeleteMessageBehavior")]
+    partial class ChangeOnDeleteMessageBehavior
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -51,14 +54,14 @@ namespace Saraha.Api.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "78e19bef-5fa4-4d8a-b3f1-3ddb6384844b",
+                            Id = "7409c9f4-4c5b-4517-a8ff-9f9271c2de88",
                             ConcurrencyStamp = "1",
                             Name = "Admin",
                             NormalizedName = "Admin"
                         },
                         new
                         {
-                            Id = "9edf1f04-ac3c-4b5f-a44e-b1acfc0addda",
+                            Id = "a7d9d34a-337d-4bc8-b3e1-eb57b5e38099",
                             ConcurrencyStamp = "1",
                             Name = "User",
                             NormalizedName = "User"
@@ -332,7 +335,7 @@ namespace Saraha.Api.Migrations
                     b.HasOne("Saraha.Api.Data.Models.Entities.Authentication.AppUser", "User")
                         .WithMany("Messages")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("User");

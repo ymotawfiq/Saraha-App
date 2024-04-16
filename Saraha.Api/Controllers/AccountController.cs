@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Facebook;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -17,8 +18,8 @@ using System.Security.Claims;
 
 namespace Saraha.Api.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    //[Route("[controller]")]
     public class AccountController : ControllerBase
     {
         private readonly IUserManagementService _userManagementService;
@@ -32,6 +33,7 @@ namespace Saraha.Api.Controllers
             this._userManager = _userManager;
         }
 
+        [AllowAnonymous]
         [HttpPost("register")]
         public async Task<IActionResult> RegisterAsync([FromBody] RegisterUserDto registerUserDto)
         {
@@ -77,8 +79,8 @@ namespace Saraha.Api.Controllers
             }
         }
 
-
-        [HttpGet("confirmemail")]
+        //[Authorize(Roles ="Admin")]
+        [HttpGet("confirm-email")]
         public async Task<IActionResult> ConfirmEmail(string token, string email)
         {
             try
@@ -106,7 +108,8 @@ namespace Saraha.Api.Controllers
             }
         }
 
-        [HttpGet("resendemailconfirmation")]
+        [AllowAnonymous]
+        [HttpGet("resendEmailConfirmation")]
         public async Task<IActionResult> ResendEmailConfirmatiomAsync(string email)
         {
             try
@@ -142,6 +145,7 @@ namespace Saraha.Api.Controllers
             }
         }
 
+        [AllowAnonymous]
         [HttpPost("login")]
         public async Task<IActionResult> LoginAsync([FromBody] LoginUserDto loginUserDto)
         {
@@ -184,6 +188,7 @@ namespace Saraha.Api.Controllers
             }
         }
 
+        [AllowAnonymous]
         [HttpPost("login-2FA")]
         public async Task<IActionResult> LoginWithTwoFactorAuthenticationAsync(string otp, string email)
         {
@@ -212,7 +217,8 @@ namespace Saraha.Api.Controllers
             }
         }
 
-        [HttpPost("refreshtoken")]
+        [Authorize(Roles ="Admin,User")]
+        [HttpPost("refresh-token")]
         public async Task<IActionResult> RefreshTokenAsync([FromBody] LoginResponse loginResponse)
         {
             try
@@ -240,19 +246,21 @@ namespace Saraha.Api.Controllers
             }
         }
 
+        [Authorize(Roles ="Admin,User")]
         [HttpGet("logout")]
         public async Task LogoutAsync()
         {
             await HttpContext.SignOutAsync();
         }
 
-        [HttpGet("currentuser")]
+        [HttpGet("current-user")]
         public ClaimsPrincipal GetCurrentUserAsync()
         {
             return HttpContext.User;
         }
 
-        [HttpGet("generateresetpasswordobject")]
+        [Authorize(Roles ="Admin")]
+        [HttpGet("generateResetPasswordObject")]
         public async Task<IActionResult> GenerateResetPasswordObject(string email, string token)
         {
             try
@@ -281,7 +289,8 @@ namespace Saraha.Api.Controllers
             }
         }
 
-        [HttpPost("forgetpassword")]
+        [AllowAnonymous]
+        [HttpPost("forget-password")]
         public async Task<IActionResult> ForgetPasswordAsync(string email)
         {
             try
@@ -326,7 +335,8 @@ namespace Saraha.Api.Controllers
         }
 
 
-        [HttpGet("resendforgetpasswordlink")]
+        [AllowAnonymous]
+        [HttpGet("resendForgetPasswordLink")]
         public async Task<IActionResult> ResendForgetPasswordLinkAsync(string email)
         {
             try
@@ -370,7 +380,8 @@ namespace Saraha.Api.Controllers
             }
         }
 
-        [HttpPost("resetpassword")]
+        [AllowAnonymous]
+        [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPasswordAsync([FromBody] ResetPasswordDto resetPasswordDto)
         {
             try
@@ -398,7 +409,8 @@ namespace Saraha.Api.Controllers
             }
         }
 
-        [HttpPost("sendemailtoresetemail")]
+        [AllowAnonymous]
+        [HttpPost("sendEmailToResetEmail")]
         public async Task<IActionResult> SendEmailToResetEmailAsync(string oldEmail, string newEmail)
         {
             try
@@ -447,6 +459,7 @@ namespace Saraha.Api.Controllers
             }
         }
 
+        [Authorize(Roles ="Admin")]
         [HttpGet("generateemailresetobject")]
         public async Task<IActionResult> GenerateEmailResetObject(string OldEmail, string NewEmail, string token)
         {
@@ -465,7 +478,8 @@ namespace Saraha.Api.Controllers
             });
         }
 
-        [HttpPost("resetemail")]
+        [AllowAnonymous]
+        [HttpPost("reset-email")]
         public async Task<IActionResult> ResetEmailAsync([FromBody] ResetEmailDto resetEmail)
         {
             try

@@ -9,7 +9,8 @@ namespace Saraha.Api.Data.EntityConfigurations
         public void Configure(EntityTypeBuilder<UserMessages> builder)
         {
             builder.HasKey(e => e.Id);
-            builder.HasOne(e => e.User).WithMany(e => e.Messages).HasForeignKey(e => e.UserId);
+            builder.HasOne(e => e.User).WithMany(e => e.Messages)
+                .HasForeignKey(e => e.UserId);
             builder.Property(e => e.Message).IsRequired();
         }
     }

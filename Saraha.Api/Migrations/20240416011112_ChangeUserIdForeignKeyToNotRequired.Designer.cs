@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Saraha.Api.Data;
 
@@ -11,9 +12,11 @@ using Saraha.Api.Data;
 namespace Saraha.Api.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240416011112_ChangeUserIdForeignKeyToNotRequired")]
+    partial class ChangeUserIdForeignKeyToNotRequired
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -51,14 +54,14 @@ namespace Saraha.Api.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "78e19bef-5fa4-4d8a-b3f1-3ddb6384844b",
+                            Id = "b273c638-ed19-453d-8c67-2b91c3ae9570",
                             ConcurrencyStamp = "1",
                             Name = "Admin",
                             NormalizedName = "Admin"
                         },
                         new
                         {
-                            Id = "9edf1f04-ac3c-4b5f-a44e-b1acfc0addda",
+                            Id = "9e6d5896-20b7-4750-b45f-f577f586c3f9",
                             ConcurrencyStamp = "1",
                             Name = "User",
                             NormalizedName = "User"
@@ -266,7 +269,6 @@ namespace Saraha.Api.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("UserId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
@@ -331,9 +333,7 @@ namespace Saraha.Api.Migrations
                 {
                     b.HasOne("Saraha.Api.Data.Models.Entities.Authentication.AppUser", "User")
                         .WithMany("Messages")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("UserId");
 
                     b.Navigation("User");
                 });

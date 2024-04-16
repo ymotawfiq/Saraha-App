@@ -37,11 +37,12 @@ namespace Saraha.Api.Services.UserMessagesService
                     {
                         IsSuccess = false,
                         Message = "User not found",
-                        StatusCode = 400
+                        StatusCode = 404
                     };
                 }
                 var userMessage = new UserMessages
                 {
+                    Id = Guid.NewGuid(),
                     Message = userMessageDto.Message,
                     UserId = userMessageDto.UserIdOrEmail,
                     SendUserEmail = "Anonymous"
@@ -69,8 +70,9 @@ namespace Saraha.Api.Services.UserMessagesService
                 }
                 var userMessage = new UserMessages
                 {
+                    Id = Guid.NewGuid(),
                     Message = userMessageDto.Message,
-                    UserId = userMessageDto.UserIdOrEmail,
+                    UserId = user.Id,
                     SendUserEmail = "Anonymous"
                 };
                 var newUserMessage = await _userMessagesRepository.AddUserMessage(userMessage);
@@ -274,7 +276,7 @@ namespace Saraha.Api.Services.UserMessagesService
                 {
                     Id = new Guid(userMessageDto.Id),
                     Message = userMessageDto.Message,
-                    UserId = userMessageDto.UserIdOrEmail,
+                    UserId = user.Id,
                     SendUserEmail = "Anonymous"
                 };
                 var updatedUser = await _userMessagesRepository.UpdateUserMessage(userMessage);
