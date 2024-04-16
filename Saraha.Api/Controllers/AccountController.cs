@@ -247,9 +247,10 @@ namespace Saraha.Api.Controllers
 
         [Authorize(Roles ="Admin,User")]
         [HttpGet("logout")]
-        public async Task LogoutAsync()
+        public async Task<string> LogoutAsync()
         {
             await HttpContext.SignOutAsync();
+            return "Success";
         }
 
         [HttpGet("current-user")]

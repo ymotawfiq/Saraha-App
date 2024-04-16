@@ -18,8 +18,8 @@ namespace Saraha.Api.Services.EmailService
         {
             var emailMessage = CreateEmailMessage(message);
             Send(emailMessage);
-            var recipients = string.Join(", ", message.To);
-            return EmailResponseMessage.GetEmailSuccessMeggage(recipients);
+            //var recipients = string.Join(", ", message.To);
+            return EmailResponseMessage.GetEmailSuccessMeggage("Success");
         }
 
         private MimeMessage CreateEmailMessage(Message message)
