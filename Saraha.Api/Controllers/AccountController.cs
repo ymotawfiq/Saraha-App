@@ -19,7 +19,6 @@ using System.Security.Claims;
 namespace Saraha.Api.Controllers
 {
     [ApiController]
-    //[Route("[controller]")]
     public class AccountController : ControllerBase
     {
         private readonly IUserManagementService _userManagementService;

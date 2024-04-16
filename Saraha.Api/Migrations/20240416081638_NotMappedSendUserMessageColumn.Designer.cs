@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Saraha.Api.Data;
 
@@ -11,9 +12,11 @@ using Saraha.Api.Data;
 namespace Saraha.Api.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240416081638_NotMappedSendUserMessageColumn")]
+    partial class NotMappedSendUserMessageColumn
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -51,14 +54,14 @@ namespace Saraha.Api.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "b0ab5bab-9923-4c31-baa4-ea23c4c511d5",
+                            Id = "8e47c6a7-2ca7-4167-891e-f781e904068b",
                             ConcurrencyStamp = "1",
                             Name = "Admin",
                             NormalizedName = "Admin"
                         },
                         new
                         {
-                            Id = "35a4a6e1-cd6b-4276-9f1a-bbe6ead5d391",
+                            Id = "83e8c640-c0bb-4fd7-98ca-a5290947db54",
                             ConcurrencyStamp = "1",
                             Name = "User",
                             NormalizedName = "User"
@@ -260,9 +263,6 @@ namespace Saraha.Api.Migrations
 
                     b.Property<string>("Message")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("SendUserEmail")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("UserId")

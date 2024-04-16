@@ -7,7 +7,6 @@ namespace Saraha.Api.Services.UserMessagesService
     public interface IUserMessagesService
     {
         Task<ApiResponse<UserMessages>> AddUserMessage(UserMessageDto userMessageDto);
-        Task<ApiResponse<UserMessages>> UpdateUserMessage(UserMessageDto userMessageDto);
         Task<ApiResponse<UserMessages>> DeleteUserMessageById(Guid userMessageId);
         Task<ApiResponse<UserMessages>> GetUserMessageById(Guid userMessageId);
         Task<ApiResponse<IEnumerable<UserMessages>>> GetAllUserMessages();

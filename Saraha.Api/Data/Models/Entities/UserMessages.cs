@@ -1,4 +1,5 @@
 ﻿using Saraha.Api.Data.Models.Entities.Authentication;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Saraha.Api.Data.Models.Entities
 {

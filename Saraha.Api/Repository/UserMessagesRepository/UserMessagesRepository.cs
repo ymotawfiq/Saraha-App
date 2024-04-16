@@ -61,10 +61,14 @@ namespace Saraha.Api.Repository.UserMessagesRepository
             try
             {
                 var user = await _userManager.FindByEmailAsync(userEmail);
-                return
-                    from u in await GetAllUserMessages()
-                    where u.UserId == user.Id
-                    select u;
+                return await _dbContext.UserMessages.Where(e => e.UserId == user.Id)
+                    .Select(e => new UserMessages
+                    {
+                        Id = e.Id,
+                        Message = e.Message,
+                        UserId = e.UserId
+                    }).ToListAsync();
+                        
             }
             catch (Exception)
             {
@@ -76,10 +80,14 @@ namespace Saraha.Api.Repository.UserMessagesRepository
         {
             try
             {
-                return
-                    from u in await GetAllUserMessages()
-                    where u.UserId == userId
-                    select u;
+                var user = await _userManager.FindByIdAsync(userId);
+                return await _dbContext.UserMessages.Where(e => e.UserId == user.Id)
+                    .Select(e => new UserMessages
+                    {
+                        Id = e.Id,
+                        Message = e.Message,
+                        UserId = e.UserId
+                    }).ToListAsync();
             }
             catch (Exception)
             {
@@ -106,19 +114,5 @@ namespace Saraha.Api.Repository.UserMessagesRepository
             await _dbContext.SaveChangesAsync();
         }
 
-        public async Task<UserMessages> UpdateUserMessage(UserMessages userMessages)
-        {
-            try
-            {
-                UserMessages userMessages1 = await GetUserMessageById(userMessages.Id);
-                userMessages1.Message = userMessages.Message;
-                await SaveChangesAsync();
-                return userMessages1;
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
     }
 }

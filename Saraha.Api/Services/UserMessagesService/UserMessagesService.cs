@@ -205,89 +205,11 @@ namespace Saraha.Api.Services.UserMessagesService
             return new ApiResponse<UserMessages>
             {
                 IsSuccess = true,
-                Message = "Message deleted successfully",
+                Message = "Message found successfully",
                 StatusCode = 200,
                 ResponseObject = await _userMessagesRepository.GetUserMessageById(userMessageId)
             };
         }
 
-        public async Task<ApiResponse<UserMessages>> UpdateUserMessage(UserMessageDto userMessageDto)
-        {
-            if (userMessageDto == null)
-            {
-                return new ApiResponse<UserMessages>
-                {
-                    IsSuccess = false,
-                    Message = "Input must not be null",
-                    StatusCode = 400
-                };
-            }
-            if (userMessageDto.Id == null)
-            {
-                return new ApiResponse<UserMessages>
-                {
-                    IsSuccess = false,
-                    Message = "User message id must not be null",
-                    StatusCode = 400
-                };
-            }
-            try
-            {
-                Guid userId = new Guid(userMessageDto.UserIdOrEmail);
-                var user = await _userManager.FindByIdAsync(userId.ToString());
-                if (user == null)
-                {
-                    return new ApiResponse<UserMessages>
-                    {
-                        IsSuccess = false,
-                        Message = "User not found",
-                        StatusCode = 400
-                    };
-                }
-                var userMessage = new UserMessages
-                {
-                    Id = new Guid(userMessageDto.Id),
-                    Message = userMessageDto.Message,
-                    UserId = userMessageDto.UserIdOrEmail,
-                    SendUserEmail = "Anonymous"
-                };
-                var updatedUser = await _userMessagesRepository.UpdateUserMessage(userMessage);
-                return new ApiResponse<UserMessages>
-                {
-                    IsSuccess = true,
-                    Message = "Message sent successfully",
-                    StatusCode = 200,
-                    ResponseObject = updatedUser
-                };
-            }
-            catch (Exception)
-            {
-                var user = await _userManager.FindByEmailAsync(userMessageDto.UserIdOrEmail);
-                if (user == null)
-                {
-                    return new ApiResponse<UserMessages>
-                    {
-                        IsSuccess = false,
-                        Message = "User not found",
-                        StatusCode = 400
-                    };
-                }
-                var userMessage = new UserMessages
-                {
-                    Id = new Guid(userMessageDto.Id),
-                    Message = userMessageDto.Message,
-                    UserId = user.Id,
-                    SendUserEmail = "Anonymous"
-                };
-                var updatedUser = await _userMessagesRepository.UpdateUserMessage(userMessage);
-                return new ApiResponse<UserMessages>
-                {
-                    IsSuccess = true,
-                    Message = "Message sent successfully",
-                    StatusCode = 200,
-                    ResponseObject = updatedUser
-                };
-            }
-        }
     }
 }

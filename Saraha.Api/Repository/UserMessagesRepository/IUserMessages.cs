@@ -5,7 +5,6 @@ namespace Saraha.Api.Repository.UserMessagesRepository
     public interface IUserMessages
     {
         Task<UserMessages> AddUserMessage(UserMessages userMessages);
-        Task<UserMessages> UpdateUserMessage(UserMessages userMessages);
         Task<UserMessages> DeleteUserMessageById(Guid userMessageId);
         Task<UserMessages> GetUserMessageById(Guid userMessageId);
         Task<IEnumerable<UserMessages>> GetAllUserMessages();
