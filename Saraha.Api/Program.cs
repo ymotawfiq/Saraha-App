@@ -133,6 +133,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseStatusCodePagesWithRedirects("/error/{0}");
+
 app.UseHttpsRedirection();
 
 app.UseHttpsRedirection();
