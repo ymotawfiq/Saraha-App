@@ -4,11 +4,10 @@ namespace Saraha.Api.Data.DTOs.Authentication.Login
 {
     public class LoginUserDto
     {
-        [Required]
-        [EmailAddress]
-        public string Email { get; set; } = string.Empty;
+        [Required(ErrorMessage = "Pleace enter your user name or email")]
+        public string UserNameOrEmail { get; set; } = null!;
 
-        [Required]
-        public string Password { get; set; } = string.Empty;
+        [Required(ErrorMessage = "Please enter your password")]
+        public string Password { get; set; } = null!;
     }
 }

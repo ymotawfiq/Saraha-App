@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Saraha.Api.Data.DTOs.Authentication.EmailConfirmation;
 using Saraha.Api.Data.DTOs.Authentication.Login;
 using Saraha.Api.Data.DTOs.Authentication.ResetEmail;
 using Saraha.Api.Data.DTOs.Authentication.ResetPassword;
@@ -30,78 +32,118 @@ namespace Saraha.Api.Services.UserManagementService
             this._signInManager = _signInManager;
         }
 
-        public async Task<ApiResponse<List<string>>> AssignRolesToUser(List<string> roles, AppUser user)
+        public async Task<ApiResponse<List<string>>> AssignRolesToUserAsync(List<string> roles, AppUser user)
         {
             List<string> assignRoles = new();
-            foreach(var role in roles)
+            var siteRoles = await _roleManager.Roles.ToListAsync();
+            if (roles.Contains("Admin"))
             {
-                if(await _roleManager.RoleExistsAsync(role))
+                foreach (var role in siteRoles)
                 {
-                    if(!await _userManager.IsInRoleAsync(user, role))
+                    if (role.Name != null)
                     {
-                        await _userManager.AddToRoleAsync(user, role);
-                        assignRoles.Add(role);
+                        if (!await _userManager.IsInRoleAsync(user, role.Name))
+                        {
+                            await _userManager.AddToRoleAsync(user, role.Name);
+                            assignRoles.Add(role.Name);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                foreach (var role in roles)
+                {
+                    if (await _roleManager.RoleExistsAsync(role))
+                    {
+                        if (!await _userManager.IsInRoleAsync(user, role))
+                        {
+                            await _userManager.AddToRoleAsync(user, role);
+                            assignRoles.Add(role);
+                        }
                     }
                 }
             }
             return new ApiResponse<List<string>>
             {
                 IsSuccess = true,
-                Message = "Roles assigned successfully to user",
+                Message = "Roles assugned successfully to user",
                 StatusCode = 200,
                 ResponseObject = assignRoles
             };
         }
 
-        public async Task<ApiResponse<string>> ConfirmEmail(string email, string token)
+        public async Task<ApiResponse<string>> ConfirmEmail(string userNameOrEmail, string token)
         {
-            var user = await _userManager.FindByEmailAsync(email);
+            var user = await GetUserByUserNameOrEmailAsync(userNameOrEmail);
             if (user != null)
             {
                 var confirmEmail = await _userManager.ConfirmEmailAsync(user, token);
-                if (confirmEmail.Succeeded)
+                if (!confirmEmail.Succeeded)
                 {
                     return new ApiResponse<string>
                     {
                         IsSuccess = true,
-                        Message = "Email confirmed successfully",
-                        StatusCode = 200
+                        Message = "Failed to confirm email",
+                        StatusCode = 400,
+                        ResponseObject = "Failed to confirm email"
                     };
                 }
+
+                return new ApiResponse<string>
+                {
+                    IsSuccess = true,
+                    Message = "Email confirmed successfully",
+                    StatusCode = 200,
+                    ResponseObject = "Email confirmed successfully"
+                };
+
             }
+
             return new ApiResponse<string>
             {
-                IsSuccess = false,
-                Message = "Can't confirm email",
-                StatusCode = 400
+                IsSuccess = true,
+                Message = "User not found",
+                StatusCode = 404,
+                ResponseObject = "User not found"
             };
         }
 
-        public async Task<ApiResponse<CreateUserResponse>> CreateUserWithTokenAsync(RegisterUserDto registerUserDto)
+        public async Task<ApiResponse<CreateUserResponse>> CreateUserWithTokenAsync(RegisterUserDto registerDto)
         {
-            var existUser = await _userManager.FindByEmailAsync(registerUserDto.Email);
-            if (existUser != null)
+            var existingUser = await _userManager.FindByEmailAsync(registerDto.Email);
+            if (existingUser != null)
             {
                 return new ApiResponse<CreateUserResponse>
                 {
                     IsSuccess = false,
-                    Message = "Choose another email",
+                    Message = "User with this email already exists",
                     StatusCode = 403
                 };
             }
-            AppUser user = new AppUser
+            existingUser = await _userManager.FindByNameAsync(registerDto.UserName);
+            if (existingUser != null)
             {
-                Email = registerUserDto.Email,
-                UserName = registerUserDto.Email,
-                FirstName = registerUserDto.FirstName,
-                LastName = registerUserDto.LastName,
-                TwoFactorEnabled = true,
+                return new ApiResponse<CreateUserResponse>
+                {
+                    IsSuccess = false,
+                    Message = "User with this user name already exists",
+                    StatusCode = 403
+                };
+            }
+            var user = new AppUser
+            {
+                Email = registerDto.Email,
+                UserName = registerDto.UserName,
+                DisplayName = registerDto.DisplayName,
+                FirstName = registerDto.FirstName,
+                LastName = registerDto.LastName,
                 SecurityStamp = Guid.NewGuid().ToString()
             };
-            var result = await _userManager.CreateAsync(user, registerUserDto.Password);
+
+            var result = await _userManager.CreateAsync(user, registerDto.Password);
             if (result.Succeeded)
             {
-                await _userManager.SetTwoFactorEnabledAsync(user, true);
                 var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
                 return new ApiResponse<CreateUserResponse>
                 {
@@ -118,168 +160,193 @@ namespace Saraha.Api.Services.UserManagementService
             return new ApiResponse<CreateUserResponse>
             {
                 IsSuccess = false,
-                StatusCode = 500,
                 Message = "Failed to create user",
-                ResponseObject = new()
+                StatusCode = 500
             };
         }
 
-        public async Task<ApiResponse<ResetEmailDto>> GenerateResetEmailTokenAsync(ResetEmailDto resetEmail)
+        public async Task<ApiResponse<ResetEmailDto>> GenerateResetEmailTokenAsync(
+            ResetEmailObjectDto resetEmailObjectDto)
         {
-            var oldUser = await _userManager.FindByEmailAsync(resetEmail.OldEmail);
-            var newUser = await _userManager.FindByEmailAsync(resetEmail.NewEmail);
-            if (oldUser == null || newUser != null)
+            var user = await _userManager.FindByEmailAsync(resetEmailObjectDto.OldEmail);
+            if (user == null)
             {
                 return new ApiResponse<ResetEmailDto>
                 {
                     IsSuccess = false,
-                    Message = "can't generate reset email token",
+                    Message = "User not found",
+                    StatusCode = 404
+                };
+            }
+            else if (resetEmailObjectDto.OldEmail == resetEmailObjectDto.NewEmail)
+            {
+                return new ApiResponse<ResetEmailDto>
+                {
+                    IsSuccess = false,
+                    Message = "New email can't be same as old email",
                     StatusCode = 400
                 };
             }
-            var token = await _userManager.GenerateChangeEmailTokenAsync(oldUser, resetEmail.NewEmail);
-            resetEmail.Token = token;
+            var userWithNewEmail = await _userManager.FindByEmailAsync(resetEmailObjectDto.NewEmail);
+            if (userWithNewEmail != null)
+            {
+                return new ApiResponse<ResetEmailDto>
+                {
+                    IsSuccess = false,
+                    Message = "Email already exists to user",
+                    StatusCode = 403
+                };
+            }
+            var token = await _userManager.GenerateChangeEmailTokenAsync(user, resetEmailObjectDto.NewEmail);
             return new ApiResponse<ResetEmailDto>
             {
                 IsSuccess = true,
-                Message = "Reset email link sent successfully to your email pleace check inbox and reset your email",
+                Message = "Reset email token generated successfully",
                 StatusCode = 200,
-                ResponseObject = resetEmail
+                ResponseObject = new ResetEmailDto
+                {
+                    NewEmail = resetEmailObjectDto.NewEmail,
+                    OldEmail = resetEmailObjectDto.OldEmail,
+                    Token = token
+                }
             };
         }
 
         public async Task<ApiResponse<ResetPasswordDto>> GenerateResetPasswordTokenAsync(string email)
         {
             var user = await _userManager.FindByEmailAsync(email);
-            if (user != null)
+            if (user == null)
             {
-                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
                 return new ApiResponse<ResetPasswordDto>
                 {
-                    IsSuccess = true,
-                    Message = "Reset password token generated successfully",
-                    StatusCode = 200,
-                    ResponseObject = new ResetPasswordDto
-                    {
-                        Token = token,
-                        Email = email
-                    }
+                    IsSuccess = false,
+                    Message = "User not found",
+                    StatusCode = 404
                 };
             }
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
             return new ApiResponse<ResetPasswordDto>
             {
-                IsSuccess = false,
-                Message = "Can't generate reset password token",
-                StatusCode = 400
+                StatusCode = 200,
+                Message = "Reset password token generated successfully",
+                IsSuccess = true,
+                ResponseObject = new ResetPasswordDto
+                {
+                    Token = token,
+                    Email = email
+                }
             };
         }
 
         public async Task<ApiResponse<LoginResponse>> GetJwtTokenAsync(AppUser user)
         {
-            if (user.UserName == null)
-            {
-                throw new NullReferenceException("Username must not be null");
-            }
-            var authClaims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Name, user.UserName),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-            };
-            var userRoles = await _userManager.GetRolesAsync(user);
-            foreach (var role in userRoles)
-            {
-                authClaims.Add(new Claim(ClaimTypes.Role, role));
-            }
-            var jwtToken = GetToken(authClaims);
             var refreshToken = GenerateRefreshToken();
             _ = int.TryParse(_configuration["JWT:RefreshTokenValidity"], out int refreshTokenValidity);
-
             user.RefreshToken = refreshToken;
             user.RefreshTokenExpierationDate = DateTime.UtcNow.AddDays(refreshTokenValidity);
             await _userManager.UpdateAsync(user);
             return new ApiResponse<LoginResponse>
             {
                 IsSuccess = true,
-                Message = "Token created",
+                Message = "Token created successfully",
                 StatusCode = 200,
                 ResponseObject = new LoginResponse
                 {
-                    AccessToken = new TokenType()
+                    AccessToken = new TokenType
                     {
-                        Token = new JwtSecurityTokenHandler().WriteToken(jwtToken),
-                        ExpiryDate = jwtToken.ValidTo
+                        ExpiryDate = (await GenerateUserToken(user)).ValidTo,
+                        Token = new JwtSecurityTokenHandler().WriteToken(await GenerateUserToken(user))
                     },
-                    RefreshToken = new TokenType()
+                    RefreshToken = new TokenType
                     {
-                        Token = user.RefreshToken,
+                        Token = refreshToken,
                         ExpiryDate = (DateTime)user.RefreshTokenExpierationDate
                     }
                 }
             };
         }
 
-        public async Task<ApiResponse<LoginOtpResponse>> GetOtpByLoginAsync(LoginUserDto loginModel)
+        public async Task<ApiResponse<LoginOtpResponse>> LoginUserAsync(LoginUserDto loginDto)
         {
-            var user = await _userManager.FindByEmailAsync(loginModel.Email);
+            var user = await GetUserByUserNameOrEmailAsync(loginDto.UserNameOrEmail);
             if (user != null)
             {
+                if (!user.EmailConfirmed)
+                {
+                    return new ApiResponse<LoginOtpResponse>
+                    {
+                        IsSuccess = false,
+                        Message = "Please confirm your email",
+                        StatusCode = 400
+                    };
+                }
                 await _signInManager.SignOutAsync();
-                await _signInManager.PasswordSignInAsync(user, loginModel.Password, false, true);
                 if (user.TwoFactorEnabled)
                 {
-                    if (!user.EmailConfirmed)
+                    var signIn = await _signInManager.CheckPasswordSignInAsync(user, loginDto.Password, false);
+                    if (!signIn.Succeeded)
                     {
                         return new ApiResponse<LoginOtpResponse>
                         {
                             IsSuccess = false,
-                            StatusCode = 400,
-                            Message = "Please confirm your email"
+                            Message = "Invalid user name or password",
+                            StatusCode = 400
                         };
                     }
                     var token = await _userManager.GenerateTwoFactorTokenAsync(user, "Email");
                     return new ApiResponse<LoginOtpResponse>
                     {
                         IsSuccess = true,
+                        Message = "OTP generated successfully",
                         StatusCode = 200,
-                        Message = "OTP sent to your email",
                         ResponseObject = new LoginOtpResponse
                         {
                             IsTwoFactorAurhenticated = user.TwoFactorEnabled,
-                            User = user,
-                            Token = token
+                            Token = token,
+                            User = user
                         }
                     };
                 }
                 else
                 {
+                    var signIn = await _signInManager.PasswordSignInAsync(user,
+                            loginDto.Password, false, false);
+                    if (!signIn.Succeeded)
+                    {
+                        return new ApiResponse<LoginOtpResponse>
+                        {
+                            IsSuccess = false,
+                            Message = "Invalid user name or password",
+                            StatusCode = 400
+                        };
+                    }
                     return new ApiResponse<LoginOtpResponse>
                     {
                         IsSuccess = true,
-                        Message = "Two factor authentication not enabled",
+                        Message = "Token generated successfully",
                         StatusCode = 200,
                         ResponseObject = new LoginOtpResponse
                         {
                             IsTwoFactorAurhenticated = user.TwoFactorEnabled,
-                            Token = string.Empty,
-                            User = user
+                            Token = new JwtSecurityTokenHandler().WriteToken(await GenerateUserToken(user))
                         }
                     };
                 }
-            }
 
+            }
             return new ApiResponse<LoginOtpResponse>
             {
                 IsSuccess = false,
                 StatusCode = 404,
-                Message = $"User doesnot exist."
+                Message = "User not found"
             };
-
         }
 
-        public async Task<ApiResponse<LoginResponse>> LoginUserWithJWTokenAsync(string otp, string email)
+        public async Task<ApiResponse<LoginResponse>> LoginUserWithOTPAsync(string otp,
+            string userNameOrEmail)
         {
-            var user = await _userManager.FindByEmailAsync(email);
-            var signIn = await _signInManager.TwoFactorSignInAsync("Email", otp, true, false);
+            var user = await GetUserByUserNameOrEmailAsync(userNameOrEmail);
+            var signIn = await _signInManager.TwoFactorSignInAsync("Email", otp, false, false);
             if (signIn.Succeeded)
             {
                 if (user != null)
@@ -289,13 +356,9 @@ namespace Saraha.Api.Services.UserManagementService
             }
             return new ApiResponse<LoginResponse>
             {
-                ResponseObject = new LoginResponse()
-                {
-
-                },
                 IsSuccess = false,
                 StatusCode = 400,
-                Message = $"Invalid Otp"
+                Message = "Invalid OTP"
             };
         }
 
@@ -303,113 +366,166 @@ namespace Saraha.Api.Services.UserManagementService
         {
             var accessToken = tokens.AccessToken;
             var refreshToken = tokens.RefreshToken;
-            if (accessToken == null || refreshToken == null || refreshToken.Token == null)
-            {
-                throw new NullReferenceException();
-            }
-            var principal = GetClaimsPrincipal(accessToken.Token);
-            var user = await _userManager.FindByNameAsync(principal.Identity.Name);
-            if(refreshToken.Token != user.RefreshToken || refreshToken.ExpiryDate <= DateTime.Now)
+            if (accessToken == null || refreshToken == null)
             {
                 return new ApiResponse<LoginResponse>
                 {
-
                     IsSuccess = false,
-                    StatusCode = 400,
-                    Message = $"Token invalid or expired"
+                    Message = "Access token or refresh token must not be null",
+                    StatusCode = 400
                 };
             }
-            var response = await GetJwtTokenAsync(user);
-            return response;
+            var principal = GetClaimsPrincipal(accessToken.Token);
+            if (principal.Identity == null || principal.Identity.Name == null)
+            {
+                return new ApiResponse<LoginResponse>
+                {
+                    IsSuccess = false,
+                    Message = "Principal name empty",
+                    StatusCode = 400
+                };
+            }
+            var user = await _userManager.FindByNameAsync(principal.Identity.Name);
+            if (user == null)
+            {
+                return new ApiResponse<LoginResponse>
+                {
+                    IsSuccess = false,
+                    Message = "User not found",
+                    StatusCode = 404
+                };
+            }
+
+            return await GetJwtTokenAsync(user);
         }
 
-        public async Task<ApiResponse<string>> ResendEmailConfirmation(string email)
+        public async Task<ApiResponse<EmailConfirmationDto>> GenerateEmailConfirmationTokenAsync
+            (string userNameOrEmail)
         {
-            var user = await _userManager.FindByEmailAsync(email);
-            if (user != null)
+            var user = await GetUserByUserNameOrEmailAsync(userNameOrEmail);
+            if (user == null)
             {
-                if (user.EmailConfirmed)
+                return new ApiResponse<EmailConfirmationDto>
                 {
-                    return new ApiResponse<string>
-                    {
-                        IsSuccess = false,
-                        Message = "Can't send email confirmation",
-                        StatusCode = 400
-                    };
-                }
-                else
-                {
-                    var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                    return new ApiResponse<string>
-                    {
-                        IsSuccess = true,
-                        Message = "Email confirmation sent successfully pleace check your inbox to verify",
-                        StatusCode = 200,
-                        ResponseObject = token
-                    };
-                }
+                    IsSuccess = false,
+                    Message = "User not found",
+                    StatusCode = 404
+                };
             }
-            return new ApiResponse<string>
+            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            return new ApiResponse<EmailConfirmationDto>
             {
-                IsSuccess = false,
-                Message = "Can't send email confirmation",
-                StatusCode = 400
+                StatusCode = 200,
+                IsSuccess = true,
+                Message = "Email confirmation token generated successfully",
+                ResponseObject = new EmailConfirmationDto
+                {
+                    Token = token,
+                    User = user
+                }
             };
         }
 
         public async Task<ApiResponse<string>> ResetPasswordAsync(ResetPasswordDto resetPasswordDto)
         {
             var user = await _userManager.FindByEmailAsync(resetPasswordDto.Email);
-            if (user != null)
+            if (user == null)
             {
-                var resetPassword = await _userManager
-                    .ResetPasswordAsync(user, resetPasswordDto.Token, resetPasswordDto.Password);
-                if (resetPassword.Succeeded)
-                {
-                    return new ApiResponse<string>
-                    {
-                        IsSuccess = true,
-                        Message = "Password reset successfully",
-                        StatusCode = 200
-                    };
-                }
                 return new ApiResponse<string>
                 {
                     IsSuccess = false,
-                    StatusCode = 400,
-                    Message = "Failed to reset password",
-                    ResponseObject = resetPassword.Errors.ToString()
+                    Message = "User not found",
+                    StatusCode = 404
+                };
+            }
+            var result = await _userManager.ResetPasswordAsync(user,
+                resetPasswordDto.Token, resetPasswordDto.Password);
+            if (result.Succeeded)
+            {
+                return new ApiResponse<string>
+                {
+                    IsSuccess = true,
+                    Message = "Password reset successfully",
+                    StatusCode = 200
                 };
             }
             return new ApiResponse<string>
             {
-                StatusCode = 400,
-                IsSuccess = false,
-                Message = "Can't send link to email please try again"
+                IsSuccess = true,
+                Message = "Failed to reset password",
+                StatusCode = 400
             };
         }
 
-        ////
-        ///
-#region PrivateMethods
-        private JwtSecurityToken GetToken(List<Claim> authClaims)
+        public async Task<ApiResponse<string>> EnableTwoFactorAuthenticationAsync(string email)
         {
-            var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT:Secret"]));
-            _ = int.TryParse(_configuration["JWT:TokenValidityInMinutes"], out int tokenValidityInMinutes);
-            var expirationTimeUtc = DateTime.UtcNow.AddMinutes(tokenValidityInMinutes);
-            var localTimeZone = TimeZoneInfo.Local;
-            var expirationTimeInLocalTimeZone = TimeZoneInfo.ConvertTimeFromUtc(expirationTimeUtc, localTimeZone);
-
-            var token = new JwtSecurityToken(
-                issuer: _configuration["JWT:ValidIssuer"],
-                audience: _configuration["JWT:ValidAudience"],
-                expires: expirationTimeInLocalTimeZone,
-                claims: authClaims,
-                signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
-                );
-
-            return token;
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                return new ApiResponse<string>
+                {
+                    IsSuccess = false,
+                    Message = "User not found",
+                    StatusCode = 404
+                };
+            }
+            await _userManager.SetTwoFactorEnabledAsync(user, true);
+            await _userManager.UpdateAsync(user);
+            return new ApiResponse<string>
+            {
+                StatusCode = 200,
+                IsSuccess = true,
+                Message = "Two factor authentication enabled successfully"
+            };
         }
+
+        public async Task<ApiResponse<string>> DeleteAccountAsync(string userNameOrEmail)
+        {
+            var user = await GetUserByUserNameOrEmailAsync(userNameOrEmail);
+            if (user == null)
+            {
+                return new ApiResponse<string>
+                {
+                    IsSuccess = false,
+                    Message = "Account not found",
+                    StatusCode = 404
+                };
+            }
+            var result = await _userManager.DeleteAsync(user);
+            if (!result.Succeeded)
+            {
+                return new ApiResponse<string>
+                {
+                    IsSuccess = false,
+                    Message = "Failed to delete Account",
+                    StatusCode = 400
+                };
+            }
+            return new ApiResponse<string>
+            {
+                StatusCode = 200,
+                Message = "Account deleted successfully",
+                IsSuccess = true
+            };
+        }
+
+        #region Private Method
+
+        private async Task<AppUser> GetUserByUserNameOrEmailAsync(string userNameOrEmail)
+        {
+            var userByEmail = await _userManager.FindByEmailAsync(userNameOrEmail);
+            var userByName = await _userManager.FindByNameAsync(userNameOrEmail);
+            if (userByEmail == null && userByName != null)
+            {
+                return userByName;
+            }
+            else if (userByName == null && userByEmail != null)
+            {
+                return userByEmail;
+            }
+            return null;
+        }
+
         private string GenerateRefreshToken()
         {
             var randomNumber = new Byte[64];
@@ -418,26 +534,57 @@ namespace Saraha.Api.Services.UserManagementService
             return Convert.ToBase64String(randomNumber);
         }
 
+        private async Task<JwtSecurityToken> GenerateUserToken(AppUser siteUser)
+        {
+            var authClaims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Email, siteUser.Email),
+                new Claim(ClaimTypes.Name, siteUser.UserName),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            };
+            var userRoles = await _userManager.GetRolesAsync(siteUser);
+            foreach (var role in userRoles)
+            {
+                authClaims.Add(new Claim(ClaimTypes.Role, role));
+            }
+            var jwtToken = GetToken(authClaims);
+            return jwtToken;
+        }
+
+        private JwtSecurityToken GetToken(List<Claim> claims)
+        {
+            var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT:Secret"]));
+            _ = int.TryParse(_configuration["JWT:TokenValidityInMinutes"], out int tokenValidityInMinutes);
+            var expirationTime = DateTime.UtcNow.AddMinutes(tokenValidityInMinutes);
+            var localTimeZone = TimeZoneInfo.Local;
+            var expirationTimeInLocalTimeZone = TimeZoneInfo.ConvertTimeFromUtc(expirationTime, localTimeZone);
+            var token = new JwtSecurityToken(
+                issuer: _configuration["JWT:ValidIssuer"],
+                audience: _configuration["JWT:ValidAudience"],
+                expires: expirationTimeInLocalTimeZone,
+                claims: claims,
+                signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
+                );
+            return token;
+        }
+
         private ClaimsPrincipal GetClaimsPrincipal(string accessToken)
         {
             var tokenValidationParameters = new TokenValidationParameters
             {
                 ValidateAudience = false,
-                ValidateIssuer = false,
                 ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT:Secret"])),
-                ValidateLifetime = false
+                ValidateIssuer = false,
+                ValidateLifetime = false,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT:Secret"]))
             };
-
             var tokenHandler = new JwtSecurityTokenHandler();
-            var principal = tokenHandler.ValidateToken(accessToken, tokenValidationParameters, out SecurityToken securityToken);
-
+            var principal = tokenHandler.ValidateToken(accessToken, tokenValidationParameters,
+                out SecurityToken securityToken);
             return principal;
-
         }
 
         #endregion
-
 
     }
 }
