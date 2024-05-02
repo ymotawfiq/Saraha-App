@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Saraha.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+11f88a344871c7f93e76baa81feea4c6fb0b167b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+325c4b7fd8624d4ae4ad2b5b7334d355aa5577fa")]
 [assembly: System.Reflection.AssemblyProductAttribute("Saraha.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Saraha.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
