@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Saraha.Api.Data;
 
@@ -11,9 +12,11 @@ using Saraha.Api.Data;
 namespace Saraha.Api.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240505210753_SeedRolesToDatabase")]
+    partial class SeedRolesToDatabase
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -51,14 +54,14 @@ namespace Saraha.Api.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "844e173a-8ccb-447b-8947-77b6e07f60a9",
+                            Id = "0af9ce0b-e9c6-4e58-b96e-931bdf3dd00b",
                             ConcurrencyStamp = "1",
                             Name = "Admin",
                             NormalizedName = "Admin"
                         },
                         new
                         {
-                            Id = "8506940e-c9cc-4997-a5f2-882f79bcd4f3",
+                            Id = "6a45fe40-8afe-4bd1-81a1-e63467b2a8a1",
                             ConcurrencyStamp = "2",
                             Name = "User",
                             NormalizedName = "User"
@@ -266,11 +269,8 @@ namespace Saraha.Api.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("SendUserName")
+                    b.Property<string>("SendUserEmail")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("ShareYourUserName")
-                        .HasColumnType("bit");
 
                     b.Property<string>("UserId")
                         .IsRequired()

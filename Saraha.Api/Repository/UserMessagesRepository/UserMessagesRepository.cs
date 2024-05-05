@@ -67,7 +67,7 @@ namespace Saraha.Api.Repository.UserMessagesRepository
                         Id = e.Id,
                         Message = e.Message,
                         UserId = e.UserId,
-                        SendUserEmail = "Anonymous"
+                        SendUserName = e.SendUserName
                     }).ToListAsync();
                         
             }
@@ -88,7 +88,7 @@ namespace Saraha.Api.Repository.UserMessagesRepository
                         Id = e.Id,
                         Message = e.Message,
                         UserId = e.UserId,
-                        SendUserEmail = "Anonymous"
+                        SendUserName = e.SendUserName
                     }).ToListAsync();
             }
             catch (Exception)

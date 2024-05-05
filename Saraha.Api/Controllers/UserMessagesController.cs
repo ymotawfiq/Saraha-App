@@ -31,12 +31,36 @@ namespace Saraha.Api.Controllers
             this._emailService = _emailService;
         }
 
-        [Authorize(Roles ="Admin")]
-        [HttpGet("admins")]
-        public async Task<IActionResult> Admins()
+
+        [HttpGet("myMessages")]
+        public async Task<IActionResult> GetMyMessagesAsync()
         {
-            var admins = await _userManager.GetUsersInRoleAsync("Admin");
-            return Ok(admins);
+            try
+            {
+                if (HttpContext.User.Identity != null && HttpContext.User.Identity.Name != null)
+                {
+                    var user = await _userManager.FindByNameAsync(HttpContext.User.Identity.Name);
+                    if (user != null)
+                    {
+                        if (user.Email != null)
+                        {
+                            var response = await _userMessagesService.GetAllUserMessagesByUserEmail(user.Email);
+                            return Ok(response);
+                        }
+                    }
+                }
+
+                return Unauthorized();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<string>
+                {
+                    StatusCode = 500,
+                    IsSuccess = false,
+                    Message = ex.Message
+                });
+            }
         }
 
         [Authorize(Roles ="Admin")]
@@ -60,58 +84,25 @@ namespace Saraha.Api.Controllers
         }
 
         [Authorize(Roles = "Admin,User")]
-        [HttpGet("usersMessagesByuser/{userId}")]
-        public async Task<IActionResult> GetAllUsersMessagesByUserId([FromRoute] string userId)
+        [HttpGet("userMessages/{userIdOrUserNameOrEmail}")]
+        public async Task<IActionResult> GetAllUsersMessages([FromRoute] string userIdOrUserNameOrEmail)
         {
             try
             {
                 if(HttpContext.User.Identity!=null && HttpContext.User.Identity.Name != null)
                 {
-                    var user = await _userManager.FindByEmailAsync(HttpContext.User.Identity.Name);
-                    if (user != null)
+                    var currentUser = await _userManager.FindByNameAsync(HttpContext.User.Identity.Name);
+                    var routeUser = await GetUserAsync(userIdOrUserNameOrEmail);
+                    if (currentUser != null && routeUser!=null)
                     {
-                        var admins = await _userManager.GetUsersInRoleAsync("Admin");
-                        if (user.Id == userId || admins.Contains(user))
+                        if (currentUser.Id == routeUser.Id 
+                            || await _userManager.IsInRoleAsync(currentUser, "Admin"))
                         {
-                            var response = await _userMessagesService.GetAllUserMessagesByUserId(userId);
+                            var response = await _userMessagesService.GetAllUserMessagesByUserId(currentUser.Id);
                             return Ok(response);
                         }
                     }
                     return Unauthorized();
-                }
-
-                return Unauthorized();
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<string>
-                {
-                    StatusCode = 500,
-                    IsSuccess = false,
-                    Message = ex.Message
-                });
-            }
-        }
-
-
-        [Authorize(Roles = "Admin,User")]
-        [HttpGet("usersMessagesByuser")]
-        public async Task<IActionResult> GetAllUsersMessagesByUserEmail(string userEmail)
-        {
-            try
-            {
-                if (HttpContext.User.Identity != null && HttpContext.User.Identity.Name!=null)
-                {
-                    var user = await _userManager.FindByEmailAsync(HttpContext.User.Identity.Name);
-                    if (user != null)
-                    {
-                        var admins = await _userManager.GetUsersInRoleAsync("Admin");
-                        if (user.Email == userEmail || admins.Contains(user))
-                        {
-                            var response = await _userMessagesService.GetAllUserMessagesByUserEmail(userEmail);
-                            return Ok(response);
-                        }
-                    }
                 }
 
                 return Unauthorized();
@@ -133,36 +124,53 @@ namespace Saraha.Api.Controllers
         {
             try
             {
-                var response = await _userMessagesService.AddUserMessage(userMessageDto);
-                
-                if (HttpContext.User.Identity != null && HttpContext.User.Identity.Name!=null)
+                if (userMessageDto.ShareYourUserName == false)
                 {
-                    var user = await _userManager.FindByEmailAsync(HttpContext.User.Identity.Name);
-                    if (user != null)
+                    var response = await _userMessagesService.AddUserMessage(userMessageDto);
+                    userMessageDto.ShareYourUserName = false;
+                    if (response.ResponseObject != null)
                     {
-                        if (response.IsSuccess)
-                        {
-                            if (response.ResponseObject != null)
-                            {
-                                response.ResponseObject.SendUserEmail = user.Email;
-                                return StatusCode(StatusCodes.Status200OK, new ApiResponse<string>
-                                {
-                                    StatusCode = 200,
-                                    IsSuccess = true,
-                                    Message = $"Message sent successfully.",
-                                    ResponseObject = "Done!!!!!!!"
-                                });
-                            }
-                        }
+                        response.ResponseObject = null!;
                     }
-                }
-                if (response.ResponseObject != null)
-                {
-                    response.ResponseObject = null;
                     return Ok(response);
                 }
-                return Ok(response);
+                if (HttpContext.User != null && HttpContext.User.Identity != null
+                    && HttpContext.User.Identity.Name != null)
+                {
+                    var currentUser = await _userManager.FindByNameAsync(HttpContext.User.Identity.Name);
+                    var routeUser = await GetUserAsync(userMessageDto.UserIdOrEmailOrUserName);
+                    if(currentUser!=null && routeUser != null)
+                    {
+                        var userMessage = new UserMessages
+                        {
+                            Message = userMessageDto.Message,
+                            SendUserName = currentUser.UserName,
+                            ShareYourUserName = true,
+                            UserId = routeUser.Id
+                        };
+                        var response = await _userMessagesRepository.AddUserMessage(userMessage);
+                        return StatusCode(StatusCodes.Status200OK, new ApiResponse<string>
+                        {
+                            StatusCode = 200,
+                            IsSuccess = true,
+                            Message = "Message sent successfully",
+                        });
+                    }
+                    return StatusCode(StatusCodes.Status404NotFound, new ApiResponse<string>
+                    {
+                        StatusCode = 404,
+                        IsSuccess = false,
+                        Message = "User you want to send message to not found"
+                    });
+                }
+                return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<string>
+                {
+                    StatusCode = 500,
+                    IsSuccess = false,
+                    Message = "Failed to send message"
+                });
             }
+
             catch (Exception ex)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<string>
@@ -184,11 +192,11 @@ namespace Saraha.Api.Controllers
                 if (HttpContext.User.Identity != null && HttpContext.User.Identity.Name != null)
                 {
                     var message = await _userMessagesRepository.GetUserMessageById(messageId);
-                    var user = await _userManager.FindByEmailAsync(HttpContext.User.Identity.Name);
+                    var user = await _userManager.FindByNameAsync(HttpContext.User.Identity.Name);
                     if (user != null && message != null)
                     {
-                        var admins = await _userManager.GetUsersInRoleAsync("Admin");
-                        if (admins.Contains(user) || message.UserId == user.Id)
+                        if (await _userManager.IsInRoleAsync(user, "Admin") 
+                            || message.UserId == user.Id)
                         {
 
                             var response = await _userMessagesService.GetUserMessageById(messageId);
@@ -220,11 +228,10 @@ namespace Saraha.Api.Controllers
                 if (HttpContext.User.Identity != null && HttpContext.User.Identity.Name != null)
                 {
                     var message = await _userMessagesRepository.GetUserMessageById(messageId);
-                    var user = await _userManager.FindByEmailAsync(HttpContext.User.Identity.Name);
+                    var user = await _userManager.FindByNameAsync(HttpContext.User.Identity.Name);
                     if (user != null && message != null)
                     {
-                        var admins = await _userManager.GetUsersInRoleAsync("Admin");
-                        if (admins.Contains(user) || message.UserId == user.Id)
+                        if (await _userManager.IsInRoleAsync(user, "Admin") || message.UserId == user.Id)
                         {
 
                             var response = await _userMessagesService.DeleteUserMessageById(messageId);
@@ -244,6 +251,28 @@ namespace Saraha.Api.Controllers
                     Message = ex.Message
                 });
             }
+        }
+
+
+
+        private async Task<AppUser> GetUserAsync(string userIdOrUserNameOrEmail)
+        {
+            var userById = await _userManager.FindByIdAsync(userIdOrUserNameOrEmail);
+            var userByUserName = await _userManager.FindByNameAsync(userIdOrUserNameOrEmail);
+            var userByEmail = await _userManager.FindByEmailAsync(userIdOrUserNameOrEmail);
+            if (userById != null)
+            {
+                return userById;
+            }
+            else if (userByEmail != null)
+            {
+                return userByEmail;
+            }
+            else if (userByUserName != null)
+            {
+                return userByUserName;
+            }
+            return null!;
         }
 
 

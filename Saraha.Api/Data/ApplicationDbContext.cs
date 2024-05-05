@@ -17,20 +17,18 @@ namespace Saraha.Api.Data
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
-			// seed on first migration
-            //SeedRoles(builder);
+            SeedRoles(builder);
             ApplyConfigurations(builder);
         }
 
-        // seed on first migration
-        //private void SeedRoles(ModelBuilder builder)
-        //{
-        //    builder.Entity<IdentityRole>().HasData
-        //        (
-        //            new IdentityRole() { ConcurrencyStamp = "1", Name = "Admin", NormalizedName = "Admin"},
-        //            new IdentityRole() { ConcurrencyStamp = "2", Name = "User", NormalizedName = "User" }
-        //        );
-        //}
+        private void SeedRoles(ModelBuilder builder)
+        {
+            builder.Entity<IdentityRole>().HasData
+                (
+                    new IdentityRole() { ConcurrencyStamp = "1", Name = "Admin", NormalizedName = "Admin" },
+                    new IdentityRole() { ConcurrencyStamp = "2", Name = "User", NormalizedName = "User" }
+                );
+        }
 
         private void ApplyConfigurations(ModelBuilder builder)
         {

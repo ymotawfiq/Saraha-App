@@ -7,9 +7,11 @@ namespace Saraha.Api.Data.DTOs
         public string? Id { get; set; }
 
         [Required]
-        public string UserIdOrEmail { get; set; } = string.Empty;
+        public string UserIdOrEmailOrUserName { get; set; } = string.Empty;
 
         [Required]
         public string Message { get; set; } = string.Empty;
+        public bool ShareYourUserName { get; set; }
+
     }
 }

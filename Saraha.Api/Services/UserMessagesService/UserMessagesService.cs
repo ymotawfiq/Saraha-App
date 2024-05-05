@@ -27,63 +27,32 @@ namespace Saraha.Api.Services.UserMessagesService
                     StatusCode = 400
                 };
             }
-            try
+            var user = await GetUserAsync(userMessageDto.UserIdOrEmailOrUserName);
+            if (user == null)
             {
-                Guid userId = new Guid(userMessageDto.UserIdOrEmail);
-                var user = await _userManager.FindByIdAsync(userId.ToString());
-                if (user == null)
-                {
-                    return new ApiResponse<UserMessages>
-                    {
-                        IsSuccess = false,
-                        Message = "User not found",
-                        StatusCode = 404
-                    };
-                }
-                var userMessage = new UserMessages
-                {
-                    Id = Guid.NewGuid(),
-                    Message = userMessageDto.Message,
-                    UserId = userMessageDto.UserIdOrEmail,
-                    SendUserEmail = "Anonymous"
-                };
-                var newUserMessage = await _userMessagesRepository.AddUserMessage(userMessage);
                 return new ApiResponse<UserMessages>
                 {
-                    IsSuccess = true,
-                    Message = "Message sent successfully",
-                    StatusCode = 200,
-                    ResponseObject = newUserMessage
+                    IsSuccess = false,
+                    Message = "User not found",
+                    StatusCode = 404
                 };
             }
-            catch (Exception)
+            var userMessage = new UserMessages
             {
-                var user = await _userManager.FindByEmailAsync(userMessageDto.UserIdOrEmail);
-                if (user == null)
-                {
-                    return new ApiResponse<UserMessages>
-                    {
-                        IsSuccess = false,
-                        Message = "User not found",
-                        StatusCode = 400
-                    };
-                }
-                var userMessage = new UserMessages
-                {
-                    Id = Guid.NewGuid(),
-                    Message = userMessageDto.Message,
-                    UserId = user.Id,
-                    SendUserEmail = "Anonymous"
-                };
-                var newUserMessage = await _userMessagesRepository.AddUserMessage(userMessage);
-                return new ApiResponse<UserMessages>
-                {
-                    IsSuccess = true,
-                    Message = "Message sent successfully",
-                    StatusCode = 200,
-                    ResponseObject = newUserMessage
-                };
-            }
+                Message = userMessageDto.Message,
+                UserId = user.Id,
+                SendUserName = "Anonymous",
+                ShareYourUserName = false
+            };
+            var sentMessage = await _userMessagesRepository.AddUserMessage(userMessage);
+            return new ApiResponse<UserMessages>
+            {
+                IsSuccess = true, 
+                Message = "Message sent successfully",
+                StatusCode = 200,
+                ResponseObject = sentMessage
+            };
+            
         }
 
         public async Task<ApiResponse<UserMessages>> DeleteUserMessageById(Guid userMessageId)
@@ -209,6 +178,27 @@ namespace Saraha.Api.Services.UserMessagesService
                 StatusCode = 200,
                 ResponseObject = await _userMessagesRepository.GetUserMessageById(userMessageId)
             };
+        }
+
+
+        private async Task<AppUser> GetUserAsync(string userIdOrUserNameOrEmail)
+        {
+            var userById = await _userManager.FindByIdAsync(userIdOrUserNameOrEmail);
+            var userByUserName = await _userManager.FindByNameAsync(userIdOrUserNameOrEmail);
+            var userByEmail = await _userManager.FindByEmailAsync(userIdOrUserNameOrEmail);
+            if (userById != null)
+            {
+                return userById;
+            }
+            else if (userByEmail != null)
+            {
+                return userByEmail;
+            }
+            else if (userByUserName != null)
+            {
+                return userByUserName;
+            }
+            return null!;
         }
 
     }

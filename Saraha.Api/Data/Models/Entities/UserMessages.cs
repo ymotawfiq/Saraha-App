@@ -7,8 +7,9 @@ namespace Saraha.Api.Data.Models.Entities
     {
         public Guid Id { get; set; }
         public string UserId { get; set; } = string.Empty;
-        public string? SendUserEmail { get; set; }
+        public string? SendUserName { get; set; }
         public string Message { get; set; } = string.Empty;
+        public bool ShareYourUserName { get; set; }
         public AppUser? User { get; set; }
     }
 }
